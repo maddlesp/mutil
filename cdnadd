@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source ~/.config/maddles/maddles.conf
+
+# Usage: ./cdnadd.sh <URL> <AUTH_TOKEN>
+URL=$API_URL"/gif/add"
+FILE_PATH="$1"
+if [ -z "$FILE_PATH" ]; then
+    echo "Usage: $0 <FILE_PATH>"
+    exit 1
+fi
+
+# Send a POST request to the specified URL with Authorization header and multipart/form-data
+curl -s -X POST \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -F "file=@$FILE_PATH" \
+    "$URL"

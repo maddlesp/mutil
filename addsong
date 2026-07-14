@@ -1,0 +1,74 @@
+#!/bin/bash
+source ~/.config/maddles/maddles.conf
+
+if [[ -z "$1" ]]; then # check for argument existence
+    echo "enter an argument"
+    exit 1
+fi
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT   # always clean up the temp dir on exit
+cd "$TMP" || exit 1
+
+domain=${1#*//}      # removes http(s)://
+domain=${domain%%/*} # removes any link information other than domain
+
+if [[ "$domain" == *soundcloud* ]]; then
+    scdl -l "$1"
+elif [[ "$domain" == *youtu* ]]; then
+    yt-dlp -4 -x --audio-format mp3 "$1"
+elif [[ "$domain" == *spotify* ]]; then
+    echo "Spotify downloading broken"
+    exit 1
+else
+    echo "Unrecognized domain: $domain"
+    exit 1
+fi
+
+wait
+
+read -p "Song Name: " title
+read -p "Artist: " artist
+read -p "Album: " album
+read -p "Genre: " genre
+
+# only match real audio files, ignore thumbnails/junk
+fileName="$(basename "$(find . -type f \( -iname '*.m4a' -o -iname '*.mp3' -o -iname '*.wav' -o -iname '*.flac' \) | head -n 1)")"
+
+if [[ -z "$fileName" ]]; then
+    echo "No audio file found after download, aborting."
+    exit 1
+fi
+echo "$fileName"
+
+args=(-i "$fileName" -map 0:a -c copy)
+[[ -n "$title" ]] && args+=(-metadata "title=$title")
+[[ -n "$artist" ]] && args+=(-metadata "artist=$artist")
+[[ -n "$album" ]] && args+=(-metadata "album=$album")
+[[ -n "$genre" ]] && args+=(-metadata "genre=$genre")
+args+=("$title - $artist - $album.${fileName##*.}")
+
+if ! ffmpeg "${args[@]}"; then
+    echo "ffmpeg failed, aborting."
+    exit 1
+fi
+
+ext="${fileName##*.}"
+fileName="$title - $artist - $album.$ext"
+
+if [[ ! -f "$fileName" ]]; then
+    echo "Expected output file not found after ffmpeg, aborting."
+    exit 1
+fi
+
+curl -X POST \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -F "file=@$fileName" \
+    "$API_URL/song/add"
+
+mv "$fileName" $MUSIC
+cd "$MUSIC" || exit 1
+
+if [[ -f "$fileName" ]]; then
+    open -a Cog "$fileName"
+fi
