@@ -1,0 +1,35 @@
+#!/bin/bash
+
+source ~/.config/maddles/maddles.conf
+
+cd $MUTIL_DIR
+
+help() {
+    echo "Usage: $0 [command] [...opts]"$'\n'"Commands:"$'\n'
+    for commands in ./bin/*; do
+        if [ "$commands" != *.man ]; then continue; fi;
+        man="$(head -n 1 "$commands.man")"
+        echo "$commands - $man"
+    done;
+
+}
+
+lowercase() {
+    echo "$(echo "$1" | tr '[:upper:]' '[:lower:]')";
+}
+
+if [ -z $1 ]; then
+    help;
+    exit 1;
+fi;
+
+if [ "$(lowercase "$1")" == "help" ]; then
+    help;
+fi;
+
+for commands in ./bin/*; do
+    if [ "$(lowercase "$1")" == "$(lowercase "${commands##*/}")" ]; then
+        $(lowercase "$commands") ${@:2}
+        break
+    fi
+done

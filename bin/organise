@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: organise [file/dir] [metadata] [new value]"
+    exit 1
+elif [ ! -d "$1" ] && [ ! -f "$1"  ]; then
+    echo "Usage: organise [filer/dir] [metadata] [new value]";
+    echo "Argument 1 is neither a file nor a directory";
+    exit 1;
+fi
+
+if [ -d "$1" ]; then
+	for file in "$1"/*; do
+		if [ -d "$file" ]; then
+			continue;
+		fi
+        clear;
+		echo "Processing $file"
+        echo "Current Values:"
+        echo "Title: $(ffprobe -v quiet -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "$file")"
+        echo "Artist: $(ffprobe -v quiet -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "$file")"
+        echo "Album: $(ffprobe -v quiet -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 "$file")"
+        echo "Genre: $(ffprobe -v quiet -show_entries format_tags=genre -of default=noprint_wrappers=1:nokey=1 "$file")"
+		read -p "New Value for $2: " nval
+		wait
+		organise "$file" "$2" "$nval"
+    done
+elif [ -f "$1" ]; then
+    echo "Processing $1"
+    # echo "Current Values:"
+    # echo "Title: $(ffprobe -v quiet -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "$1")"
+    # echo "Artist: $(ffprobe -v quiet -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "$1")"
+    # echo "Album: $(ffprobe -v quiet -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 "$1")"
+    # echo "Genre: $(ffprobe -v quiet -show_entries format_tags=genre -of default=noprint_wrappers=1:nokey=1 "$1")"
+    ffmpeg -i "$1" -loglevel quiet -metadata "$2=$3" "${1%.*}_new.${1##*.}"
+    mv "${1%.*}_new.${1##*.}" "$1"
+fi
+
+

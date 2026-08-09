@@ -6,7 +6,7 @@ source ~/.config/maddles/maddles.conf
 URL=$API_URL"/gif/add"
 FILE_PATH="$1"
 if [ -z "$FILE_PATH" ]; then
-    echo "Usage: $0 <FILE_PATH>"
+    echo "Usage: ${0##*/} <FILE_PATH>"
     exit 1
 fi
 
