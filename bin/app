@@ -1,0 +1,76 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 [--options] path"
+    exit 1
+fi
+
+if [ ! -f "${!#}" ]; then
+    echo "Executable does not exist or is missing"
+    exit 1
+fi
+
+lowercase() {
+    echo "$(echo "$@" | tr '[:upper:]' '[:lower:]')";
+}
+
+args=( "${@:1:$#-1}" )
+idx=0
+NoMove=0
+
+while [ $idx -lt ${#args[@]} ]; do
+    case "$(lowercase "${args[$idx]}")" in
+        "--version"|"-v")
+            dump+=("Version=${args[$((++idx))]}")
+        ;;
+        "--name"|"-n")
+            dump+=("Name=${args[$((++idx))]}")
+        ;;
+        "--generic-name"|"-g")
+            dump+=("GenericName=${args[$((++idx))]}")
+        ;;
+        "--icon"|"-i")
+            dump+=("Icon=${args[$((++idx))]}")
+        ;;
+        "--type"|"-t")
+            dump+=("Type=${args[$((++idx))]}")
+        ;;
+        "--keywords"|"-k")
+            while [[ "${args[$((++idx))]}" != "-"*  && $idx -lt $((${#args[$idx]}-1)) ]]; do
+                keywords+=(${args[$idx]});
+            done
+            dump+=("Keywords=$(echo ${categories[*]} | sed "s/ /;/g")")
+            ((idx--))
+        ;;
+        "--categories"|"-c")
+            while [[ "${args[$((++idx))]}" != "-"* && $idx -lt $((${#args[$idx]}-1)) ]]; do
+                categories+=(${args[$idx]});
+            done
+            dump+=("Categories=$(echo ${categories[*]} | sed "s/ /;/g")")
+            ((idx--))
+        ;;
+        "--no-move"|"-x")
+            NoMove=1
+        ;;
+    esac
+    ((idx++))
+done
+
+if [[ ${dump[@]} != *"Type="* ]]; then
+    dump+=("Type=Application")
+fi
+if [[ ${dump[@]} != *"Name="* ]]; then
+    name="${!#}"
+    name=${name##*/}
+    dump+=("Name=$name")
+fi
+
+if ((NoMove)); then
+    dump+=("Exec=$(realpath "${!#}")")
+else 
+    mv "$(realpath ${!#})" "~/.local/share/applications/bin"
+    dump+=("Exec=~/.local/share/applications/bin/${!###*/}")
+fi
+
+
+echo "$(echo ${dump[*]} | sed "s/ /\n/g")" > "~/.local/share/applications/${name%.*}.desktop"
