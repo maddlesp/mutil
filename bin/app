@@ -3,7 +3,7 @@
 source $HOME/.config/maddles/maddles.conf
 
 lowercase() {
-    echo "$(echo "$@" | tr '[:upper:]' '[:lower:]')";
+    printf '%s' "$@" | tr '[:upper:]' '[:lower:]';
 }
 
 [[ -z "$1" ]] && exit 2
@@ -11,7 +11,6 @@ lowercase() {
 exc="${!#}"
 
 if [ ! -f "$(realpath -q "$exc")" ]; then
-    echo ""
     echo "$(tput setaf 1)fatal: Executable does not exist or is missing$(tput sgr0)"
     exit 1
 fi
@@ -26,7 +25,7 @@ while [ $idx -lt ${#args[@]} ]; do
         ;;
         "--name"|"-n")
             dump+=("Name=${args[$((++idx))]}")
-            name="${args[$idx]}"
+	    name="${args[$idx]}"
         ;;
         "--generic-name"|"-g")
             dump+=("GenericName=${args[$((++idx))]}")
@@ -57,6 +56,8 @@ while [ $idx -lt ${#args[@]} ]; do
         "--help"|"-h")
             exit 2
         ;;
+*)
+	echo ${args[$idx]}
     esac
     ((idx++))
 done
@@ -70,11 +71,13 @@ if [[ -z "$name" ]]; then
     dump+=("Name=$name")
 fi
 
-if [[ -z "$NoMove"  ]]; then
+if [[ ! -z "$NoMove"  ]]; then
     dump+=("Exec=$(realpath "$exc")")
-else 
-    mv "$(realpath "$exc")" "~/.local/share/applications/bin"
-    dump+=("Exec=~/.local/share/applications/bin/${exc##*/}")
+else
+    mkdir "$HOME/.local/share/applications/bin" 
+    mv "$(realpath "$exc")" "$HOME/.local/share/applications/bin"
+    chmod +x "$HOME/.local/share/applications/bin/${exc##*/}"
+    dump+=("Exec=$HOME/.local/share/applications/bin/${exc##*/}")
 fi
 
 
