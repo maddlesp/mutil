@@ -1,35 +1,76 @@
 #!/bin/bash
 
-source ~/.config/maddles/maddles.conf
-
-cd $MUTIL_DIR
+source $HOME/.config/maddles/maddles.conf
 
 help() {
-    echo "Usage: $0 [command] [...opts]"$'\n'"Commands:"$'\n'
-    for commands in ./bin/*; do
-        if [ "$commands" != *.man ]; then continue; fi;
-        man="$(head -n 1 "$commands.man")"
-        echo "$commands - $man"
+    echo
+    echo "Usage: ${0##*/} [--opt] [cmd] [args]"$'\n'
+    echo "$(tail -n +3 "$dir/desc/mutil.desc")"$'\n'
+    echo "Commands:"
+    for command in $dir/bin/*; do
+        if [ ! -f "$dir/desc/${command##*/}.desc" ]; then continue; fi;
+        usage="$(head -n 1 "$dir/desc/${command##*/}.desc")"
+        desc="$(tail -n +2 "$dir/desc/${command##*/}.desc" | head -n 1)"
+        printf "  %-30s %s\n" "$usage" "$desc"
     done;
-
+    echo
 }
 
 lowercase() {
     echo "$(echo "$1" | tr '[:upper:]' '[:lower:]')";
 }
 
-if [ -z $1 ]; then
+dir=$(dirname $BASH_SOURCE[0])
+
+args=( "$@" )
+idx=0
+
+if (( $# == 0 )); then
     help;
     exit 1;
 fi;
 
-if [ "$(lowercase "$1")" == "help" ]; then
-    help;
-fi;
-
-for commands in ./bin/*; do
-    if [ "$(lowercase "$1")" == "$(lowercase "${commands##*/}")" ]; then
-        $(lowercase "$commands") ${@:2}
-        break
-    fi
+while [ $idx -lt ${#args[@]} ]; do
+    case "$(lowercase "${args[$idx]}")" in
+        "--help"|"-h")
+            if [[ ! -z ${args[$((++idx))]} ]]; then
+                if [ ! -f "$dir/desc/${args[$idx]}.desc" ]; then
+                    echo "$(tput setaf 1)Command (${args[$((idx))]}) does not exist$(tput sgr0)"
+                    help;
+                    exit 0
+                fi
+                echo $'\n'"Usage: ${BASH_SOURCE##*/} $(head -n 1 "$dir/desc/${args[idx]}.desc")"
+                echo "$(tail -n +3 "$dir/desc/${args[idx]}.desc")"$'\n'
+            else 
+                help;
+            fi
+            exit 0
+            ;;
+        *)
+            if [ ! -f "$dir/bin/${args[$idx]}" ]; then
+                echo "$(tput setaf 1)Command (${args[$idx]}) does not exist$(tput sgr0)"
+                exit 1
+            fi
+            "$dir/bin/${args[$idx]}" "${args[@]:$((idx+1))}"
+            case $? in
+                0)
+                    exit 0
+                    ;;
+                1)
+                    echo "$(tput setaf 1)Command (${args[$idx]}) failed$(tput sgr0)"
+                    exit 1
+                    ;;
+                2)
+                    $BASH_SOURCE -h ${args[$idx]}
+                    exit 0
+                    ;;
+                *)
+                    echo "$(tput setaf 1)Command (${args[$idx]}) exited with code $code$(tput sgr0)"
+                    exit $code
+                    ;;
+            esac
+            ;;
+    esac
+    idx=$((idx+1))
 done
+

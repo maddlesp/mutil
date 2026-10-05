@@ -1,0 +1,137 @@
+#!/bin/bash
+if [ ! -z $HOME/.config/maddles/*.conf ]; then
+    source $HOME/.config/maddles/*.conf;
+fi
+
+lowercase() {
+    echo "$(echo "$@" | tr '[:upper:]' '[:lower:]')";
+}
+
+
+[[ -z $1 ]] && exit 2
+
+
+[[ -z "$format" ]] && format=".m4a"
+
+# DEFINITIONS
+
+remoteSource=1
+[[ -f "$(realpath -q ${!#})" ]] && remoteSource=0;
+
+TMP="$(mktemp -d)"
+trap 'rm -rf $TMP' EXIT
+cd "$TMP" || exit 1
+
+args=( "${@:1:$#-1}" )
+idx=0
+
+while [[ $idx -lt ${#args[@]} ]]; do
+    case "${args[$idx]}" in
+        "--output"|"-o")
+            MUSIC="${args[$((++idx))]}";
+            ;;
+        "--format"|"-f")
+            format="${args[$((++idx))]}";
+            ;;
+        "--no-remote"|"-R")
+            noPush=1;
+            ;;
+        "--remote"|"-r")
+            API_URL="${args[$((++idx))]}";
+            ;;
+        "--auth"|"-A")
+            AUTH_TOKEN="${args[$((++idx))]}";
+            ;;
+        "--form"|"-F")
+            NAME_FORM="${args[$((++idx))]}";
+            ;;
+        "--no-name"|"-N")
+            noName=1;
+            ;;
+        "--artist"|"-a")
+            artist="${args[$((++idx))]}";
+            ;;
+        "--album"|"-l")
+            album="${args[$((++idx))]}";
+            ;;
+        "--title"|"-t")
+            title="${args[$((++idx))]}";
+            ;;
+        "--genre"|"-g")
+            genre="${args[$((++idx))]}";
+            ;;
+        "--help"|"-h")
+            exit 2
+            ;;
+    esac
+    ((idx++));
+done
+
+echo "${!#}"
+
+case "${!#}"; do
+    "*soundcloud*")
+        scdl -l "${!#}";
+        ;;
+    "*youtu*")
+        yt-dlp -4 -x --audio-format mp3 "${!#}"
+        ;;
+    *)
+        echo "Unrecognized domain: ${!#%%/*}";
+        exit 1;;
+esac
+
+wait
+
+
+
+filename="$(basename "$(find . -type f \( -iname '*.m4a' -o -iname '*.mp3' -o -iname '*.wav' -o -iname '*.flac' \) | head -n 1)")"
+
+if [[ -z "$filename" ]]; then
+    echo "No resulting file after download, aborting"
+    exit 1
+fi
+
+if [[ -z $title ]]; then
+    read -p "Song Name: " title
+fi
+if [[ -z $artist ]]; then
+    read -p "Artist: " artist
+fi
+if [[ -z $album ]]; then
+    read -p "Album: " album
+fi
+if [[ -z $genre ]]; then
+    read -p "Genre: " genre
+fi
+
+fargs=(-i "$filename" -map 0:a -c copy)
+[[ -n "$title" ]] && fargs+=(-metadata "title=$title")
+[[ -n "$artist" ]] && fargs+=(-metadata "artist=$artist")
+[[ -n "$album" ]] && fargs+=(-metadata "album=$album")
+[[ -n "$genre" ]] && fargs+=(-metadata "genre=$genre")
+
+
+if [[ -z $NAME_FORM  && -z $noName ]]; then
+    echo "No name format specified, use either --form or --no-name"
+    exit 1
+elif (($noName > 0)); then
+    filename="${filename%.*}.$format";
+else
+    n="${NAME_FORM//%TITLE//$title}";
+    n="${n//%ARTIST//$artist}";
+    n="${n//%ALBUM//$album}";
+    n="${n//%GENRE//$genre}";
+    filename="$n.$format";
+fi
+
+fargs+=("$filename");
+
+if ! ffmpeg "${fargs[@]}"; then
+    echo "ffmpeg failed, aborting";
+    exit 1
+fi
+
+if [[ ! -z $API_URL ]] && ((noPush<1)); then
+
+

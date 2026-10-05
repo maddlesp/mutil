@@ -1,0 +1,16 @@
+song [--options] [url|path]
+Acquire and format media for use in media players.
+Options:
+  --help, -h                     Show this help message
+  --output, -o <file>            Output file
+  --format, -f <format>          Audio format
+  --no-remote, -R                Do not push to remote host
+  --remote, -r <url>             Remote host API URL
+  --auth, -A <token>             Authentication token
+  --form, -F <form>              Name format
+  --no-name, -N                  Do not set name
+  --artist, -a <artist>          Artist name
+  --album, -l <album>            Album name
+  --title, -t <title>            Song title
+  --genre, -g <genre>            Genre
+  --help, -h                     Help Menu

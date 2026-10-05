@@ -1,0 +1,5 @@
+mutil [--opt] [cmd] [args]
+Central utility service
+Options:
+  --help, -h                     Show this help message
+  --help, -h [cmd]               Show help for a specific command

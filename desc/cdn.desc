@@ -1,0 +1,2 @@
+cdn [path]
+Sends a file to a remote host with authorization

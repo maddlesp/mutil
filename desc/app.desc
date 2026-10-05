@@ -1,0 +1,12 @@
+app [--options] [exec]
+Generates a .desktop file for use within app launchers
+Options:
+  --help, -h                     Show this help message
+  --version, -v <version>        Set the version of the application
+  --name, -n <name>              Set the name of the application
+  --generic-name, -g <generic>   Set the generic name of the application
+  --icon, -i <icon>              Set the icon of the application
+  --type, -t <type>              Set the type of the application (default: Application)
+  --keywords, -k <keyword1> ...  Set keywords for the application (space-separated)
+  --categories, -c <category1> . Set categories for the application (space-separated)
+  --no-move, -m                  Do not move the executable to bin folder
